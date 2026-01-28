@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HydraTrack - Stay Hydrated</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>💧 HydraTrack</h1>
+        <p>Your smart hydration assistant</p>
+        
+        <div class="input-section">
+            <label>Enter your weight (kg):</label>
+            <input type="number" id="weightInput" placeholder="e.g. 65">
+            <button onclick="setGoal()">Set Daily Goal</button>
+        </div>
+        
+        <div class="goal-section" id="goalSection">
+            <h3>Your daily goal: <span id="goalAmount">0</span> liters</h3>
+        </div>
+        
+        <div class="water-glass">
+            <div class="glass">
+                <div class="water" id="waterLevel"></div>
+            </div>
+            <p>Click below when you drink water!</p>
+            <button class="drink-btn" onclick="addWater()">🚰 I Drank 250ml</button>
+            <button onclick="resetDay()">🔄 Reset Day</button>
+        </div>
+        
+        <div class="progress">
+            <p>Progress: <span id="progressPercent">0</span>%</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+        
+        <div class="tip-box">
+            <h4>💡 Smart Tip:</h4>
+            <p id="tipText">Drink water within 30 minutes of waking up!</p>
+        </div>
+        
+        <div class="reminder">
+            <button onclick="enableReminders()">🔔 Enable Reminders</button>
+            <p>Get reminded every 2 hours</p>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
