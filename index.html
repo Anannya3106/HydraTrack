@@ -3,185 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HydraTrack - Smart Hydration Tracker</title>
-    <link rel="stylesheet" href="style.css">
+    <title>HydraTrack - Smart Hydration</title>
+    <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
     <div class="container">
-        <!-- Header -->
         <header>
-            <h1><i class="fas fa-tint"></i> HydraTrack</h1>
-            <p class="subtitle">Track Your Daily Water Intake</p>
-            <div class="save-indicator">
-                <i class="fas fa-save"></i>
-                <span id="saveStatus">Auto-save enabled</span>
-            </div>
+            <h1><i class="fa-solid fa-droplet"></i> HydraTrack</h1>
+            <p id="current-date">Today</p>
         </header>
 
-        <!-- Setup Section -->
-        <section class="card setup-card">
-            <h2><i class="fas fa-user-cog"></i> Your Setup</h2>
-            <div class="setup-form">
-                <div class="form-group">
-                    <label for="weightInput">
-                        <i class="fas fa-weight"></i> Your Weight (kg):
-                    </label>
-                    <input type="number" id="weightInput" placeholder="Enter weight" min="30" max="200" value="65">
-                    <button onclick="setGoal()" class="btn btn-primary">
-                        <i class="fas fa-bullseye"></i> Calculate Goal
-                    </button>
+        <!-- Settings Section -->
+        <section class="card settings-card">
+            <div class="input-group">
+                <label for="weight-input">Your Weight (kg):</label>
+                <div class="input-wrapper">
+                    <input type="number" id="weight-input" placeholder="e.g., 65" min="1" max="300">
+                    <button id="save-weight-btn">Set Goal</button>
                 </div>
-                
-                <div class="cup-selection">
-                    <p><i class="fas fa-glass-whiskey"></i> Select Cup Size:</p>
-                    <div class="cup-options">
-                        <button class="cup-btn" onclick="selectCup(250)">250ml</button>
-                        <button class="cup-btn active" onclick="selectCup(350)">350ml</button>
-                        <button class="cup-btn" onclick="selectCup(500)">500ml</button>
-                        <button class="cup-btn" onclick="selectCup(1000)">1L</button>
+            </div>
+            <div class="goal-display">
+                <span>Daily Goal: <strong id="goal-amount">0</strong> ml</span>
+            </div>
+        </section>
+
+        <!-- Main Visualization -->
+        <section class="main-display">
+            <!-- The Water Glass -->
+            <div class="glass-container">
+                <div class="glass">
+                    <div class="water" id="water-fill">
+                        <div class="wave"></div>
+                    </div>
+                    <div class="glass-text">
+                        <span id="percentage-text">0%</span>
                     </div>
                 </div>
             </div>
-            
-            <div class="goal-display" id="goalDisplay">
-                <h3><i class="fas fa-flag"></i> Daily Goal</h3>
-                <div class="goal-amount">
-                    <span id="goalAmount">2000</span> ml
-                    <small>(<span id="goalLitres">2.0</span> liters)</small>
-                </div>
-                <p class="goal-info">Based on your weight × 33ml per kg</p>
-            </div>
-        </section>
 
-        <!-- Water Tracking -->
-        <section class="card tracking-card">
-            <h2><i class="fas fa-tint"></i> Track Water</h2>
-            
-            <!-- Water Glass -->
-            <div class="water-glass-container">
-                <div class="glass">
-                    <div class="water-fill" id="waterFill"></div>
-                    <div class="water-percent" id="waterPercent">0%</div>
-                </div>
-                <div class="glass-base"></div>
-            </div>
-            
-            <!-- Controls -->
-            <div class="tracking-controls">
-                <button onclick="addWater()" class="btn btn-drink">
-                    <i class="fas fa-plus-circle"></i>
-                    Drink <span id="currentCup">350</span>ml
-                </button>
-                <button onclick="undoDrink()" class="btn btn-undo">
-                    <i class="fas fa-undo"></i> Undo
-                </button>
-            </div>
-            
-            <!-- Progress -->
-            <div class="progress-container">
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill"></div>
-                </div>
-                <div class="progress-text">
-                    <span id="currentWater">0</span>ml / <span id="dailyGoalDisplay">2000</span>ml
-                    (<span id="progressText">0%</span>)
-                </div>
-            </div>
-            
             <!-- Stats -->
             <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
-                    <div class="stat-value" id="currentStat">0</div>
-                    <div class="stat-label">Drank Today</div>
+                <div class="stat-box">
+                    <i class="fa-solid fa-glass-water"></i>
+                    <h3>Drank</h3>
+                    <p><span id="drank-amount">0</span> ml</p>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-bullseye"></i></div>
-                    <div class="stat-value" id="remainingStat">2000</div>
-                    <div class="stat-label">Remaining</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon"><i class="fas fa-glass-whiskey"></i></div>
-                    <div class="stat-value" id="cupsStat">0</div>
-                    <div class="stat-label">Cups Today</div>
+                <div class="stat-box">
+                    <i class="fa-solid fa-bullseye"></i>
+                    <h3>Remaining</h3>
+                    <p><span id="remaining-amount">0</span> ml</p>
                 </div>
             </div>
         </section>
 
-        <!-- Data Management -->
-        <section class="card data-card">
-            <h2><i class="fas fa-database"></i> Data Storage</h2>
-            
-            <div class="data-info">
-                <p><i class="fas fa-info-circle"></i> All data is saved in your browser. Works offline!</p>
+        <!-- Controls -->
+        <section class="card controls-card">
+            <h3>Select Cup Size</h3>
+            <div class="cup-selector" id="cup-selector">
+                <button class="cup-btn" data-size="250">250ml</button>
+                <button class="cup-btn active" data-size="350">350ml</button>
+                <button class="cup-btn" data-size="500">500ml</button>
+                <button class="cup-btn" data-size="1000">1L</button>
             </div>
-            
-            <div class="data-controls">
-                <button onclick="viewHistory()" class="btn btn-data">
-                    <i class="fas fa-history"></i> View History
-                </button>
-                <button onclick="saveNow()" class="btn btn-data">
-                    <i class="fas fa-save"></i> Save Now
-                </button>
-                <button onclick="resetToday()" class="btn btn-data">
-                    <i class="fas fa-redo"></i> Reset Today
-                </button>
-                <button onclick="clearAllData()" class="btn btn-danger">
-                    <i class="fas fa-trash"></i> Clear All
-                </button>
-            </div>
-            
-            <div class="history-container" id="historyContainer">
-                <!-- History will appear here -->
-                <div class="empty-history">
-                    <i class="fas fa-clock"></i>
-                    <p>No history yet. Start drinking!</p>
-                </div>
-            </div>
-            
-            <div class="storage-info">
-                <div class="info-item">
-                    <i class="fas fa-calendar-day"></i>
-                    <span>Today:</span>
-                    <strong id="todayDate">Loading...</strong>
-                </div>
-                <div class="info-item">
-                    <i class="fas fa-save"></i>
-                    <span>Last Save:</span>
-                    <strong id="lastSaveTime">Never</strong>
-                </div>
-            </div>
-        </section>
 
-        <!-- Tips & Reminders -->
-        <section class="card tips-card">
-            <h2><i class="fas fa-lightbulb"></i> Smart Tips</h2>
-            <div class="tip-box">
-                <i class="fas fa-comment-medical"></i>
-                <p id="currentTip">Drink water within 30 minutes of waking up!</p>
-            </div>
-            <button onclick="newTip()" class="btn btn-tip">
-                <i class="fas fa-random"></i> New Tip
+            <button id="add-water-btn" class="main-action-btn">
+                <i class="fa-solid fa-plus"></i> Add Water
             </button>
             
-            <div class="reminder-box">
-                <h3><i class="fas fa-bell"></i> Reminders</h3>
-                <button onclick="enableReminders()" class="btn btn-reminder">
-                    <i class="fas fa-bell"></i> Enable Browser Reminders
-                </button>
-                <p class="reminder-note">Get notified every 2 hours</p>
+            <div id="tip-display" class="hydration-tip">
+                <i class="fa-solid fa-lightbulb"></i> <span id="tip-text">Start your day with a glass!</span>
             </div>
         </section>
 
-        <!-- Footer -->
-        <footer>
-            <p><i class="fas fa-code"></i> HydraTrack - Local Storage Demo</p>
-            <p class="footer-note">Your data stays private - stored only in your browser</p>
-        </footer>
+        <!-- History & Options -->
+        <section class="card history-card">
+            <h3><i class="fa-solid fa-clock-rotate-left"></i> Today's History</h3>
+            <ul id="history-list" class="history-list">
+                <!-- Items added via JS -->
+                <li class="empty-msg">No water intake yet.</li>
+            </ul>
+        </section>
+
+        <section class="options-row">
+            <button id="reset-day-btn" class="secondary-btn warning">Reset Today</button>
+            <button id="clear-all-btn" class="secondary-btn danger">Clear All Data</button>
+        </section>
     </div>
 
-    <!-- JavaScript -->
+    <!-- Celebration Modal -->
+    <div id="celebration-modal" class="modal hidden">
+        <div class="modal-content">
+            <i class="fa-solid fa-trophy trophy-icon"></i>
+            <h2>Goal Reached!</h2>
+            <p>Great job staying hydrated today!</p>
+            <button id="close-modal-btn">Keep Drinking</button>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
