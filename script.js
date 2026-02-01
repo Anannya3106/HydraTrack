@@ -1,82 +1,379 @@
+// ============================================
+// HYDRATRACK - MAIN SCRIPT
+// ============================================
+
+// Global variables
 let currentWater = 0;
-let dailyGoal = 2000; // Default 2 liters
+let dailyGoal = 2000;
+let cupSize = 350;
+let today = new Date().toDateString();
+let drinkHistory = [];
 
-// Set goal based on weight
-function setGoal() {
-    const weight = document.getElementById('weightInput').value;
-    if (weight) {
-        dailyGoal = Math.round(weight * 33); // 33ml per kg
-        document.getElementById('goalAmount').textContent = (dailyGoal / 1000).toFixed(1);
-        updateDisplay();
-        alert(`Daily goal set to ${dailyGoal}ml (≈${(dailyGoal/1000).toFixed(1)}L)`);
-    } else {
-        alert("Please enter your weight first!");
-    }
-}
+// Tips database
+const tips = [
+    "💧 Drink water within 30 minutes of waking up!",
+    "💧 Keep a water bottle on your desk",
+    "💧 Drink before meals to aid digestion",
+    "💧 Feeling hungry? Drink water first!",
+    "💧 Add lemon or cucumber for flavor",
+    "💧 Drink before and after exercise",
+    "💧 Set hourly reminders on your phone",
+    "💧 Drink more when it's hot outside",
+    "💧 Your urine should be light yellow",
+    "💧 Choose water over sugary drinks",
+    "💧 Eat water-rich foods like watermelon",
+    "💧 Drink before you feel thirsty"
+];
 
-// Add water when button clicked
-function addWater() {
-    currentWater += 250; // 250ml per click
-    if (currentWater > dailyGoal) currentWater = dailyGoal;
-    updateDisplay();
+// ============================================
+// INITIALIZATION
+// ============================================
+
+// When page loads
+window.addEventListener('DOMContentLoaded', function() {
+    console.log("🚀 HydraTrack starting...");
     
-    // Celebration when goal reached
-    if (currentWater >= dailyGoal) {
-        alert("🎉 Congratulations! You reached your daily goal!");
+    // Load saved data
+    loadAllData();
+    
+    // Set today's date
+    document.getElementById('todayDate').textContent = formatDate(new Date());
+    
+    // Show welcome message
+    setTimeout(() => {
+        showMessage("HydraTrack loaded! Your data is saved locally.", "success");
+    }, 1000);
+    
+    // Auto-save every 30 seconds
+    setInterval(saveAllData, 30000);
+    
+    console.log("✅ HydraTrack ready!");
+});
+
+// ============================================
+// CORE FUNCTIONS
+// ============================================
+
+// Set daily goal based on weight
+function setGoal() {
+    const weightInput = document.getElementById('weightInput');
+    const weight = parseFloat(weightInput.value);
+    
+    if (!weight || weight < 30 || weight > 200) {
+        showMessage("Please enter a valid weight (30-200 kg)", "error");
+        weightInput.focus();
+        return;
+    }
+    
+    // Calculate goal: 33ml per kg
+    dailyGoal = Math.round(weight * 33);
+    
+    // Update display
+    document.getElementById('goalAmount').textContent = dailyGoal;
+    document.getElementById('goalLitres').textContent = (dailyGoal / 1000).toFixed(1);
+    document.getElementById('dailyGoalDisplay').textContent = dailyGoal;
+    
+    // Save and show message
+    saveAllData();
+    showMessage(`Daily goal set: ${dailyGoal}ml (${(dailyGoal/1000).toFixed(1)}L)`, "success");
+    
+    updateDisplay();
+}
+
+// Select cup size
+function selectCup(size) {
+    cupSize = size;
+    
+    // Update active button
+    document.querySelectorAll('.cup-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (parseInt(btn.textContent.replace('ml', '').replace('L', '000')) === size) {
+            btn.classList.add('active');
+        }
+    });
+    
+    document.getElementById('currentCup').textContent = size;
+    showMessage(`Cup size set to ${size}ml`, "info");
+    saveAllData();
+}
+
+// Add water
+function addWater() {
+    currentWater += cupSize;
+    
+    // Add to history
+    const now = new Date();
+    drinkHistory.push({
+        time: now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+        amount: cupSize,
+        total: currentWater
+    });
+    
+    // Keep only last 20 entries
+    if (drinkHistory.length > 20) {
+        drinkHistory = drinkHistory.slice(-20);
+    }
+    
+    updateDisplay();
+    saveAllData();
+    showMessage(`+${cupSize}ml added! Total: ${currentWater}ml`, "success");
+    
+    // Check if goal reached
+    if (currentWater >= dailyGoal && dailyGoal > 0) {
+        celebrateGoal();
     }
 }
 
-// Update the water glass and progress
+// Undo last drink
+function undoDrink() {
+    if (drinkHistory.length > 0) {
+        const lastDrink = drinkHistory.pop();
+        currentWater -= lastDrink.amount;
+        
+        updateDisplay();
+        saveAllData();
+        showMessage(`Undid ${lastDrink.amount}ml drink`, "info");
+    } else {
+        showMessage("No drinks to undo", "warning");
+    }
+}
+
+// Update all displays
 function updateDisplay() {
-    const percent = Math.min(100, (currentWater / dailyGoal) * 100);
+    // Calculate percentage
+    const percent = dailyGoal > 0 ? Math.min(100, (currentWater / dailyGoal) * 100) : 0;
     
     // Update water glass
-    document.getElementById('waterLevel').style.height = `${percent}%`;
+    document.getElementById('waterFill').style.height = `${percent}%`;
+    document.getElementById('waterPercent').textContent = `${Math.round(percent)}%`;
     
-    // Update progress bar
+    // Update stats
+    document.getElementById('currentWater').textContent = currentWater;
+    document.getElementById('currentStat').textContent = currentWater;
+    document.getElementById('remainingStat').textContent = Math.max(0, dailyGoal - currentWater);
+    document.getElementById('cupsStat').textContent = Math.round(currentWater / cupSize);
+    
+    // Update progress
     document.getElementById('progressFill').style.width = `${percent}%`;
-    document.getElementById('progressPercent').textContent = Math.round(percent);
+    document.getElementById('progressText').textContent = `${Math.round(percent)}%`;
     
-    // Update tips based on progress
-    const tipText = document.getElementById('tipText');
-    if (percent < 30) {
-        tipText.textContent = "💡 Start your day with 2 glasses of water!";
-    } else if (percent < 70) {
-        tipText.textContent = "💡 Keep going! Drink before meals for better digestion.";
+    // Update tip based on progress
+    updateTip(percent);
+}
+
+// Update tip based on progress
+function updateTip(percent) {
+    let tipIndex = 0;
+    if (percent < 25) {
+        tipIndex = 0; // Morning
+    } else if (percent < 50) {
+        tipIndex = 1; // Mid-morning
+    } else if (percent < 75) {
+        tipIndex = 2; // Afternoon
     } else if (percent < 100) {
-        tipText.textContent = "💡 Almost there! Drinking water improves focus.";
+        tipIndex = 3; // Evening
     } else {
-        tipText.textContent = "🎉 Goal achieved! You're hydrated and healthy!";
+        tipIndex = 4; // Goal achieved
+    }
+    
+    document.getElementById('currentTip').textContent = tips[tipIndex % tips.length];
+}
+
+// Get new random tip
+function newTip() {
+    const randomTip = tips[Math.floor(Math.random() * tips.length)];
+    document.getElementById('currentTip').textContent = randomTip;
+    showMessage("New tip loaded!", "info");
+}
+
+// ============================================
+// DATA STORAGE FUNCTIONS
+// ============================================
+
+// Save all data
+function saveAllData() {
+    try {
+        localStorage.setItem('hydra_weight', document.getElementById('weightInput').value);
+        localStorage.setItem('hydra_water', currentWater.toString());
+        localStorage.setItem('hydra_goal', dailyGoal.toString());
+        localStorage.setItem('hydra_cup', cupSize.toString());
+        localStorage.setItem('hydra_date', today);
+        localStorage.setItem('hydra_history', JSON.stringify(drinkHistory));
+        
+        // Update save time
+        const now = new Date();
+        const saveTime = `${formatTime(now)}`;
+        localStorage.setItem('hydra_lastSave', saveTime);
+        document.getElementById('lastSaveTime').textContent = saveTime;
+        
+        // Show save indicator
+        document.getElementById('saveStatus').innerHTML = `<i class="fas fa-sync-alt fa-spin"></i> Saving...`;
+        setTimeout(() => {
+            document.getElementById('saveStatus').innerHTML = `<i class="fas fa-check-circle"></i> Saved`;
+        }, 500);
+        
+        return true;
+    } catch (error) {
+        console.error("Save error:", error);
+        showMessage("Error saving data", "error");
+        return false;
     }
 }
 
-// Reset for new day
-function resetDay() {
-    currentWater = 0;
-    updateDisplay();
-    alert("Day reset! Start fresh.");
+// Save now button
+function saveNow() {
+    if (saveAllData()) {
+        showMessage("Data saved successfully!", "success");
+    }
 }
 
-// Enable reminders (browser notification)
-function enableReminders() {
-    if ("Notification" in window && Notification.permission === "granted") {
-        alert("Reminders already enabled!");
-    } else if ("Notification" in window && Notification.permission !== "denied") {
-        Notification.requestPermission().then(permission => {
-            if (permission === "granted") {
-                alert("✅ Reminders enabled! You'll get notifications every 2 hours.");
-                // Simple reminder every 2 hours (for demo)
-                setInterval(() => {
-                    new Notification("💧 HydraTrack Reminder", {
-                        body: "Time to drink water! Stay hydrated!",
-                        icon: "https://cdn-icons-png.flaticon.com/128/869/869869.png"
-                    });
-                }, 7200000); // 2 hours in milliseconds
+// Load all data
+function loadAllData() {
+    console.log("📂 Loading saved data...");
+    
+    try {
+        // Load basic data
+        const savedWeight = localStorage.getItem('hydra_weight');
+        const savedWater = localStorage.getItem('hydra_water');
+        const savedGoal = localStorage.getItem('hydra_goal');
+        const savedCup = localStorage.getItem('hydra_cup');
+        const savedDate = localStorage.getItem('hydra_date');
+        const savedHistory = localStorage.getItem('hydra_history');
+        const savedTime = localStorage.getItem('hydra_lastSave');
+        
+        // Set values
+        if (savedWeight) {
+            document.getElementById('weightInput').value = savedWeight;
+            calculateGoal(savedWeight);
+        }
+        
+        if (savedWater) currentWater = parseInt(savedWater);
+        if (savedGoal) dailyGoal = parseInt(savedGoal);
+        if (savedCup) {
+            cupSize = parseInt(savedCup);
+            selectCup(cupSize);
+        }
+        
+        if (savedHistory) {
+            try {
+                drinkHistory = JSON.parse(savedHistory);
+            } catch (e) {
+                drinkHistory = [];
             }
-        });
+        }
+        
+        // Check if it's a new day
+        if (savedDate !== today) {
+            currentWater = 0;
+            drinkHistory = [];
+            showMessage("🎉 New day started! Stay hydrated!", "success");
+        }
+        
+        // Update last save time
+        if (savedTime) {
+            document.getElementById('lastSaveTime').textContent = savedTime;
+        }
+        
+        // Update display
+        document.getElementById('goalAmount').textContent = dailyGoal;
+        document.getElementById('goalLitres').textContent = (dailyGoal / 1000).toFixed(1);
+        document.getElementById('dailyGoalDisplay').textContent = dailyGoal;
+        
+        updateDisplay();
+        
+        console.log("✅ Data loaded successfully");
+        return true;
+        
+    } catch (error) {
+        console.error("Load error:", error);
+        showMessage("Error loading saved data", "error");
+        return false;
     }
 }
 
-// Initialize with default values
-document.getElementById('goalAmount').textContent = "2.0";
-updateDisplay();
+// View drinking history
+function viewHistory() {
+    const container = document.getElementById('historyContainer');
+    
+    if (drinkHistory.length === 0) {
+        container.innerHTML = `
+            <div class="empty-history">
+                <i class="fas fa-clock"></i>
+                <p>No drinking history yet.</p>
+                <p><small>Start by clicking "Drink" button!</small></p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = `
+        <h3><i class="fas fa-history"></i> Today's Drinks</h3>
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Amount</th>
+                    <th>Total</th>
+                    <th>Progress</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    // Show drinks in reverse order (newest first)
+    const reversedHistory = [...drinkHistory].reverse();
+    
+    reversedHistory.forEach(entry => {
+        const percent = dailyGoal > 0 ? Math.min(100, (entry.total / dailyGoal) * 100) : 0;
+        
+        html += `
+            <tr>
+                <td>${entry.time}</td>
+                <td>+${entry.amount}ml</td>
+                <td>${entry.total}ml</td>
+                <td>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="flex:1; background:#e0e0e0; height:8px; border-radius:4px;">
+                            <div style="background:#4fc3f7; height:100%; border-radius:4px; width:${percent}%"></div>
+                        </div>
+                        <span>${Math.round(percent)}%</span>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    html += `
+            </tbody>
+        </table>
+        <p style="text-align:center; margin-top:15px; color:#666;">
+            <small>Showing ${reversedHistory.length} drinks today</small>
+        </p>
+    `;
+    
+    container.innerHTML = html;
+}
+
+// Reset today's data
+function resetToday() {
+    if (confirm("Reset today's water intake? Your weight goal will be kept.")) {
+        currentWater = 0;
+        drinkHistory = [];
+        updateDisplay();
+        saveAllData();
+        viewHistory();
+        showMessage("Today's progress reset!", "success");
+    }
+}
+
+// Clear all data
+function clearAllData() {
+    if (confirm("⚠️ WARNING: Delete ALL saved data?\n\n• Weight goal\n• Drinking history\n• All preferences\n\nThis cannot be undone.")) {
+        localStorage.clear();
+        currentWater = 0;
+        dailyGoal = 2000;
+        cupSize = 350;
+        drinkHistory = [];
+        
+        // Reset form
+        document.getElementById('weightInput').value =
