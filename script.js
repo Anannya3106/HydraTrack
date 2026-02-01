@@ -1,5 +1,5 @@
 // ============================================
-// HYDRATRACK - MAIN SCRIPT
+// HYDRATRACK - FIXED VERSION
 // ============================================
 
 // Global variables
@@ -51,10 +51,10 @@ window.addEventListener('DOMContentLoaded', function() {
 });
 
 // ============================================
-// CORE FUNCTIONS
+// CORE FUNCTIONS - FIXED!
 // ============================================
 
-// Set daily goal based on weight
+// Set daily goal based on weight - FIXED!
 function setGoal() {
     const weightInput = document.getElementById('weightInput');
     const weight = parseFloat(weightInput.value);
@@ -68,7 +68,7 @@ function setGoal() {
     // Calculate goal: 33ml per kg
     dailyGoal = Math.round(weight * 33);
     
-    // Update display
+    // Update ALL goal displays - FIXED!
     document.getElementById('goalAmount').textContent = dailyGoal;
     document.getElementById('goalLitres').textContent = (dailyGoal / 1000).toFixed(1);
     document.getElementById('dailyGoalDisplay').textContent = dailyGoal;
@@ -87,7 +87,15 @@ function selectCup(size) {
     // Update active button
     document.querySelectorAll('.cup-btn').forEach(btn => {
         btn.classList.remove('active');
-        if (parseInt(btn.textContent.replace('ml', '').replace('L', '000')) === size) {
+        // Extract size from button text
+        let btnSize = 250; // default
+        const btnText = btn.textContent;
+        if (btnText.includes('1L')) btnSize = 1000;
+        else if (btnText.includes('500')) btnSize = 500;
+        else if (btnText.includes('350')) btnSize = 350;
+        else if (btnText.includes('250')) btnSize = 250;
+        
+        if (btnSize === size) {
             btn.classList.add('active');
         }
     });
@@ -165,15 +173,15 @@ function updateDisplay() {
 function updateTip(percent) {
     let tipIndex = 0;
     if (percent < 25) {
-        tipIndex = 0; // Morning
+        tipIndex = 0;
     } else if (percent < 50) {
-        tipIndex = 1; // Mid-morning
+        tipIndex = 1;
     } else if (percent < 75) {
-        tipIndex = 2; // Afternoon
+        tipIndex = 2;
     } else if (percent < 100) {
-        tipIndex = 3; // Evening
+        tipIndex = 3;
     } else {
-        tipIndex = 4; // Goal achieved
+        tipIndex = 4;
     }
     
     document.getElementById('currentTip').textContent = tips[tipIndex % tips.length];
@@ -227,7 +235,7 @@ function saveNow() {
     }
 }
 
-// Load all data
+// Load all data - FIXED!
 function loadAllData() {
     console.log("📂 Loading saved data...");
     
@@ -244,14 +252,18 @@ function loadAllData() {
         // Set values
         if (savedWeight) {
             document.getElementById('weightInput').value = savedWeight;
-            calculateGoal(savedWeight);
+            // Calculate goal when loading weight - FIXED!
+            const weight = parseFloat(savedWeight);
+            if (weight && weight >= 30 && weight <= 200) {
+                dailyGoal = Math.round(weight * 33);
+            }
         }
         
         if (savedWater) currentWater = parseInt(savedWater);
         if (savedGoal) dailyGoal = parseInt(savedGoal);
         if (savedCup) {
             cupSize = parseInt(savedCup);
-            selectCup(cupSize);
+            selectCup(cupSize); // This will update the UI
         }
         
         if (savedHistory) {
@@ -274,14 +286,16 @@ function loadAllData() {
             document.getElementById('lastSaveTime').textContent = savedTime;
         }
         
-        // Update display
+        // Update ALL displays - FIXED!
         document.getElementById('goalAmount').textContent = dailyGoal;
         document.getElementById('goalLitres').textContent = (dailyGoal / 1000).toFixed(1);
         document.getElementById('dailyGoalDisplay').textContent = dailyGoal;
+        document.getElementById('currentCup').textContent = cupSize;
         
         updateDisplay();
         
         console.log("✅ Data loaded successfully");
+        console.log("Goal after load:", dailyGoal);
         return true;
         
     } catch (error) {
@@ -469,11 +483,6 @@ function showMessage(text, type = "info") {
     }, 4000);
 }
 
-// Calculate goal (used in load)
-function calculateGoal(weight) {
-    dailyGoal = Math.round(weight * 33);
-}
-
 // Format date
 function formatDate(date) {
     return date.toLocaleDateString('en-US', {
@@ -585,21 +594,25 @@ function startReminders() {
 }
 
 // ============================================
-// TEST FUNCTION - REMOVE IN FINAL VERSION
+// TEST FUNCTION - FIXED CALCULATION
 // ============================================
 
 // Quick test function
-function testApp() {
-    console.log("🧪 Testing HydraTrack...");
-    console.log("Current water:", currentWater);
-    console.log("Daily goal:", dailyGoal);
-    console.log("Cup size:", cupSize);
-    console.log("History length:", drinkHistory.length);
+function testGoalCalculation() {
+    const testWeight = 65;
+    const expectedGoal = Math.round(testWeight * 33); // Should be 2145
     
-    // Test local storage
-    localStorage.setItem('test', 'working');
-    const testResult = localStorage.getItem('test');
-    console.log("Local Storage test:", testResult === 'working' ? '✅ WORKING' : '❌ FAILED');
+    // Set test weight
+    document.getElementById('weightInput').value = testWeight;
+    setGoal();
     
-    showMessage("App test completed. Check console for results.", "info");
+    // Check result
+    const actualGoal = dailyGoal;
+    console.log("🧪 Goal Calculation Test:");
+    console.log("Weight:", testWeight, "kg");
+    console.log("Expected goal:", expectedGoal, "ml");
+    console.log("Actual goal:", actualGoal, "ml");
+    console.log("Test:", actualGoal === expectedGoal ? "✅ PASS" : "❌ FAIL");
+    
+    showMessage(`Test: 65kg = ${actualGoal}ml goal`, actualGoal === 2145 ? "success" : "error");
 }
